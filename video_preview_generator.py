@@ -59,7 +59,7 @@ def create_video_preview(video_path, output_path, clip_duration=2, num_clips=5, 
         if i > 0:
             effects.append(FadeIn(duration=0.5))
         effects.append(FadeOut(duration=0.5))
-        subclip = subclip.fx(*effects)
+        subclip = subclip.with_effects(effects)
 
         preview_clips.append(subclip)
 
