@@ -115,4 +115,4 @@ if __name__ == "__main__":
         extract_frames(args.video_path, args.output_dir, args.num_frames)
     elif args.output_type == "preview":
         create_video_preview(args.video_path, args.output_path, args.clip_duration, args.num_clips, resolution,
-                             args.include_audio)
+                             args.include_audio, args.random_selection)
