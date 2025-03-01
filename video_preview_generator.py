@@ -1,6 +1,5 @@
 import os
 import random
-
 import cv2
 from moviepy import VideoFileClip, concatenate_videoclips
 from moviepy.video.fx.FadeIn import FadeIn
@@ -33,7 +32,6 @@ def extract_frames(video_path, output_dir, num_frames=10):
     cap.release()
     print(f"Extracted {extracted_count} frames to {output_dir}")
 
-
 def create_video_preview(video_path, output_path, clip_duration=2, num_clips=5, resolution=(1280, 720),
                          include_audio=True, random_selection=False):
     clip = VideoFileClip(video_path).resized(resolution)
@@ -42,13 +40,11 @@ def create_video_preview(video_path, output_path, clip_duration=2, num_clips=5, 
 
     start_times = []
     if random_selection:
-        # Generate random start times
         for _ in range(num_clips):
             start_time = random.uniform(0, max(0, duration - clip_duration))
             start_times.append(start_time)
         start_times.sort()  # Sort to ensure chronological order
     else:
-        # Generate evenly spaced start times
         start_times = [i * avg_interval for i in range(num_clips)]
 
     preview_clips = []
@@ -64,7 +60,6 @@ def create_video_preview(video_path, output_path, clip_duration=2, num_clips=5, 
 
         preview_clips.append(subclip)
 
-    # Concatenate the clips and write the output file
     preview = concatenate_videoclips(preview_clips, method="compose")
     preview.write_videofile(
         output_path,
@@ -76,7 +71,6 @@ def create_video_preview(video_path, output_path, clip_duration=2, num_clips=5, 
         ffmpeg_params=["-b:a", "192k"]
     )
     print(f"Preview video saved to {output_path}")
-
 
 if __name__ == "__main__":
     import argparse
@@ -102,11 +96,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Parse resolution argument
     width, height = map(int, args.resolution.split('x'))
     resolution = (width, height)
 
-    # Default output path if not specified
     if args.output_path is None:
         base, ext = os.path.splitext(args.video_path)
         args.output_path = f"{base}_preview.mp4"
