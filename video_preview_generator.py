@@ -34,15 +34,23 @@ def extract_frames(video_path, output_dir, num_frames=10):
 
 
 def create_video_preview(video_path, output_path, clip_duration=2, num_clips=5, resolution=(1280, 720),
-                         include_audio=True):
-    # Open and resize the video clip
+                         include_audio=True, random=False):
     clip = VideoFileClip(video_path).resized(resolution)
     duration = clip.duration
-    interval = max(duration / num_clips, clip_duration)
+    avg_interval = duration / num_clips
 
-    start_times = [i * interval for i in range(num_clips)]
+    start_times = []
+    if random:
+        # Generate random start times
+        for _ in range(num_clips):
+            start_time = random.uniform(0, max(0, duration - clip_duration))
+            start_times.append(start_time)
+        start_times.sort()  # Sort to ensure chronological order
+    else:
+        # Generate evenly spaced start times
+        start_times = [i * avg_interval for i in range(num_clips)]
+
     preview_clips = []
-
     for i, start in enumerate(start_times):
         end = min(start + clip_duration, duration)
         subclip = clip.subclipped(start, end).with_duration(clip_duration)
@@ -51,7 +59,7 @@ def create_video_preview(video_path, output_path, clip_duration=2, num_clips=5, 
         if i > 0:
             effects.append(FadeIn(duration=0.5))
         effects.append(FadeOut(duration=0.5))
-        subclip = subclip.with_effects(effects)
+        subclip = subclip.fx(*effects)
 
         preview_clips.append(subclip)
 
@@ -61,10 +69,10 @@ def create_video_preview(video_path, output_path, clip_duration=2, num_clips=5, 
         output_path,
         codec="libx264",
         audio=include_audio,
-        audio_codec='aac',  # Use AAC codec for audio
-        temp_audiofile='temp-audio.m4a',  # Temporary audio file
-        remove_temp=True,  # Remove temporary files after processing
-        ffmpeg_params=["-b:a", "192k"]  # Set audio bitrate
+        audio_codec='aac',
+        temp_audiofile='temp-audio.m4a',
+        remove_temp=True,
+        ffmpeg_params=["-b:a", "192k"]
     )
     print(f"Preview video saved to {output_path}")
 
@@ -84,10 +92,12 @@ if __name__ == "__main__":
                         help="Duration of each clip (in seconds, for 'preview').")
     parser.add_argument("-n", "--num_clips", type=int, default=5,
                         help="Number of clips to include (for 'preview').")
-    parser.add_argument("-r", "--resolution", type=str, default="640x480",
+    parser.add_argument("-r", "--resolution", type=str, default="1280x720",
                         help="Resolution of the preview video (format: WIDTHxHEIGHT).")
     parser.add_argument("-a", "--include_audio", action="store_true", default=True,
                         help="Include audio in the preview video.")
+    parser.add_argument("--random", action="store_true", default=False,
+                        help="Select subclips randomly instead of evenly spaced.")
 
     args = parser.parse_args()
 
