@@ -1,4 +1,5 @@
 import os
+import random
 
 import cv2
 from moviepy import VideoFileClip, concatenate_videoclips
@@ -34,13 +35,13 @@ def extract_frames(video_path, output_dir, num_frames=10):
 
 
 def create_video_preview(video_path, output_path, clip_duration=2, num_clips=5, resolution=(1280, 720),
-                         include_audio=True, random=False):
+                         include_audio=True, random_selection=False):
     clip = VideoFileClip(video_path).resized(resolution)
     duration = clip.duration
     avg_interval = duration / num_clips
 
     start_times = []
-    if random:
+    if random_selection:
         # Generate random start times
         for _ in range(num_clips):
             start_time = random.uniform(0, max(0, duration - clip_duration))
@@ -96,7 +97,7 @@ if __name__ == "__main__":
                         help="Resolution of the preview video (format: WIDTHxHEIGHT).")
     parser.add_argument("-a", "--include_audio", action="store_true", default=True,
                         help="Include audio in the preview video.")
-    parser.add_argument("--random", action="store_true", default=False,
+    parser.add_argument("--random_selection", action="store_true", default=False,
                         help="Select subclips randomly instead of evenly spaced.")
 
     args = parser.parse_args()
