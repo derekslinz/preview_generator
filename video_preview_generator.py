@@ -1,10 +1,9 @@
 import os
 
 import cv2
+from moviepy import VideoFileClip, concatenate_videoclips
 from moviepy.video.fx.FadeIn import FadeIn
 from moviepy.video.fx.FadeOut import FadeOut
-
-from moviepy import VideoFileClip, concatenate_videoclips
 
 
 def extract_frames(video_path, output_dir, num_frames=10):
@@ -34,7 +33,8 @@ def extract_frames(video_path, output_dir, num_frames=10):
     print(f"Extracted {extracted_count} frames to {output_dir}")
 
 
-def create_video_preview(video_path, output_path, clip_duration=2, num_clips=5, resolution=(1280, 720)):
+def create_video_preview(video_path, output_path, clip_duration=2, num_clips=5, resolution=(1280, 720),
+                         include_audio=True):
     # Open and resize the video clip
     clip = VideoFileClip(video_path).resized(resolution)
     duration = clip.duration
@@ -45,28 +45,27 @@ def create_video_preview(video_path, output_path, clip_duration=2, num_clips=5, 
 
     for i, start in enumerate(start_times):
         end = min(start + clip_duration, duration)
-        # Extract the subclip using the new API and set its duration
         subclip = clip.subclipped(start, end).with_duration(clip_duration)
 
-        # Build a list of effects to apply.
-        # For all but the first clip, add a fade-in effect.
         effects = []
         if i > 0:
             effects.append(FadeIn(duration=0.5))
         effects.append(FadeOut(duration=0.5))
-        # Apply the effects using with_effects(), which returns a modified VideoFileClip.
         subclip = subclip.with_effects(effects)
 
         preview_clips.append(subclip)
 
-    # Debug output
-    print(f"Clips to concatenate: {preview_clips}")
-    print(f"Clip types: {[type(clip) for clip in preview_clips]}")
-    print(f"Clip durations: {[clip.duration for clip in preview_clips]}")
-
     # Concatenate the clips and write the output file
     preview = concatenate_videoclips(preview_clips, method="compose")
-    preview.write_videofile(output_path, codec="libx264", audio=False)
+    preview.write_videofile(
+        output_path,
+        codec="libx264",
+        audio=include_audio,
+        audio_codec='aac',  # Use AAC codec for audio
+        temp_audiofile='temp-audio.m4a',  # Temporary audio file
+        remove_temp=True,  # Remove temporary files after processing
+        ffmpeg_params=["-b:a", "192k"]  # Set audio bitrate
+    )
     print(f"Preview video saved to {output_path}")
 
 
@@ -87,6 +86,8 @@ if __name__ == "__main__":
                         help="Number of clips to include (for 'preview').")
     parser.add_argument("-r", "--resolution", type=str, default="640x480",
                         help="Resolution of the preview video (format: WIDTHxHEIGHT).")
+    parser.add_argument("-a", "--include_audio", action="store_true", default=True,
+                        help="Include audio in the preview video.")
 
     args = parser.parse_args()
 
@@ -102,4 +103,5 @@ if __name__ == "__main__":
     if args.output_type == "frames":
         extract_frames(args.video_path, args.output_dir, args.num_frames)
     elif args.output_type == "preview":
-        create_video_preview(args.video_path, args.output_path, args.clip_duration, args.num_clips, resolution)
+        create_video_preview(args.video_path, args.output_path, args.clip_duration, args.num_clips, resolution,
+                             args.include_audio)
