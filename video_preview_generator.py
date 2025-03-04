@@ -1,3 +1,4 @@
+import os
 import random
 import tkinter as tk
 from tkinter import filedialog, messagebox
@@ -52,6 +53,8 @@ def select_video_file():
     file_path = filedialog.askopenfilename(filetypes=[("Video files", "*.mp4 *.avi *.mov *.m4v *.mkv")])
     if file_path:
         video_path_var.set(file_path)
+        base, ext = os.path.splitext(file_path)
+        output_file_name_var.set(f"{base}_preview{ext}")
 
 
 def run_preview():
@@ -75,9 +78,7 @@ app = tk.Tk()
 app.title("Video Processing Tool")
 
 video_path_var = tk.StringVar()
-output_dir_var = tk.StringVar()
 output_file_name_var = tk.StringVar()
-num_frames_var = tk.StringVar(value="10")
 clip_duration_var = tk.StringVar(value="2")
 num_clips_var = tk.StringVar(value="5")
 resolution_var = tk.StringVar(value="1280x720")
