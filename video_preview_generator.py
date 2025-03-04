@@ -1,8 +1,11 @@
+from __future__ import unicode_literals, print_function
+
 import os
 import random
 import tkinter as tk
 from tkinter import filedialog, messagebox
 
+import ffmpeg
 from moviepy import VideoFileClip, concatenate_videoclips
 from moviepy.video.fx.FadeIn import FadeIn
 from moviepy.video.fx.FadeOut import FadeOut
@@ -56,6 +59,38 @@ def select_video_file():
         base, ext = os.path.splitext(file_path)
         output_file_name_var.set(f"{base}_preview{ext}")
 
+        # Extract video attributes using ffmpeg-python
+        try:
+            probe = ffmpeg.probe(file_path)
+            video_streams = [stream for stream in probe['streams'] if stream['codec_type'] == 'video']
+            audio_streams = [stream for stream in probe['streams'] if stream['codec_type'] == 'audio']
+
+            if video_streams:
+                video_codec = video_streams[0]['codec_name']
+                width = video_streams[0]['width']
+                height = video_streams[0]['height']
+                resolution = f"{width}x{height}"
+                duration = float(probe['format']['duration'])
+
+                # Set the resolution variable to the video's resolution
+                resolution_var.set(resolution)
+            else:
+                video_codec = "Unknown"
+                resolution = "Unknown"
+                duration = 0.0
+
+            audio_codec = audio_streams[0]['codec_name'] if audio_streams else "None"
+
+            # Display video attributes, one per line
+            video_attributes_var.set(
+                f"Resolution: {resolution}\n"
+                f"Duration: {duration:.2f}s\n"
+                f"Video Codec: {video_codec}\n"
+                f"Audio Codec: {audio_codec}"
+            )
+        except ffmpeg.Error as e:
+            messagebox.showerror("Error", f"Failed to retrieve video attributes: {e}")
+
 
 def run_preview():
     video_path = video_path_var.get()
@@ -84,6 +119,7 @@ num_clips_var = tk.StringVar(value="5")
 resolution_var = tk.StringVar(value="1280x720")
 include_audio_var = tk.BooleanVar(value=True)
 random_selection_var = tk.BooleanVar(value=True)
+video_attributes_var = tk.StringVar(value="")
 
 tk.Label(app, text="Video File:").grid(row=0, column=0, sticky="e")
 tk.Entry(app, textvariable=video_path_var, width=50).grid(row=0, column=1)
@@ -103,6 +139,8 @@ tk.Entry(app, textvariable=resolution_var, width=10).grid(row=6, column=1, stick
 
 tk.Checkbutton(app, text="Include Audio", variable=include_audio_var).grid(row=7, column=1, sticky="w")
 tk.Checkbutton(app, text="Random Selection", variable=random_selection_var).grid(row=8, column=1, sticky="w")
+
+tk.Label(app, textvariable=video_attributes_var, fg="blue", justify="left").grid(row=10, column=0, columnspan=3)
 
 tk.Button(app, text="Create Preview", command=run_preview).grid(row=9, column=1, pady=10)
 
