@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, print_function
 
+import argparse
 import os
 import random
 import tkinter as tk
@@ -109,39 +110,64 @@ def run_preview():
                          random_selection)
 
 
-app = tk.Tk()
-app.title("Video Processing Tool")
+def main():
+    parser = argparse.ArgumentParser(description="Generate a video preview.")
+    parser.add_argument("-v", "--video_path", help="Path to the input video file.")
+    parser.add_argument("-o", "--output_file_name", help="Path to save the preview video.")
+    parser.add_argument("-c", "--clip_duration", type=int, default=2, help="Duration of each clip (in seconds).")
+    parser.add_argument("-n", "--num_clips", type=int, default=5, help="Number of clips to include.")
+    parser.add_argument("-r", "--resolution", type=str, default="1280x720", help="Resolution of the preview video.")
+    parser.add_argument("-a", "--include_audio", action="store_true", help="Include audio in the preview video.")
+    parser.add_argument("--random_selection", action="store_true", help="Select subclips randomly.")
 
-video_path_var = tk.StringVar()
-output_file_name_var = tk.StringVar()
-clip_duration_var = tk.StringVar(value="2")
-num_clips_var = tk.StringVar(value="5")
-resolution_var = tk.StringVar(value="1280x720")
-include_audio_var = tk.BooleanVar(value=True)
-random_selection_var = tk.BooleanVar(value=True)
-video_attributes_var = tk.StringVar(value="")
+    args = parser.parse_args()
 
-tk.Label(app, text="Video File:").grid(row=0, column=0, sticky="e")
-tk.Entry(app, textvariable=video_path_var, width=50).grid(row=0, column=1)
-tk.Button(app, text="Browse", command=select_video_file).grid(row=0, column=2)
+    if args.video_path and args.output_file_name:
+        resolution = tuple(map(int, args.resolution.split('x')))
+        create_video_preview(args.video_path, args.output_file_name, args.clip_duration, args.num_clips, resolution,
+                             args.include_audio, args.random_selection)
+    else:
+        # Launch the GUI if no CLI arguments are provided
+        app = tk.Tk()
+        app.title("Video Processing Tool")
 
-tk.Label(app, text="Output File Name:").grid(row=2, column=0, sticky="e")
-tk.Entry(app, textvariable=output_file_name_var, width=50).grid(row=2, column=1)
+        global video_path_var, output_file_name_var, clip_duration_var, num_clips_var, resolution_var
+        global include_audio_var, random_selection_var, video_attributes_var
 
-tk.Label(app, text="Clip Duration (s):").grid(row=4, column=0, sticky="e")
-tk.Entry(app, textvariable=clip_duration_var, width=10).grid(row=4, column=1, sticky="w")
+        video_path_var = tk.StringVar()
+        output_file_name_var = tk.StringVar()
+        clip_duration_var = tk.StringVar(value="2")
+        num_clips_var = tk.StringVar(value="5")
+        resolution_var = tk.StringVar(value="1280x720")
+        include_audio_var = tk.BooleanVar(value=True)
+        random_selection_var = tk.BooleanVar(value=True)
+        video_attributes_var = tk.StringVar(value="")
 
-tk.Label(app, text="Number of Clips:").grid(row=5, column=0, sticky="e")
-tk.Entry(app, textvariable=num_clips_var, width=10).grid(row=5, column=1, sticky="w")
+        tk.Label(app, text="Video File:").grid(row=0, column=0, sticky="e")
+        tk.Entry(app, textvariable=video_path_var, width=50).grid(row=0, column=1)
+        tk.Button(app, text="Browse", command=select_video_file).grid(row=0, column=2)
 
-tk.Label(app, text="Resolution:").grid(row=6, column=0, sticky="e")
-tk.Entry(app, textvariable=resolution_var, width=10).grid(row=6, column=1, sticky="w")
+        tk.Label(app, text="Output File Name:").grid(row=2, column=0, sticky="e")
+        tk.Entry(app, textvariable=output_file_name_var, width=50).grid(row=2, column=1)
 
-tk.Checkbutton(app, text="Include Audio", variable=include_audio_var).grid(row=7, column=1, sticky="w")
-tk.Checkbutton(app, text="Random Selection", variable=random_selection_var).grid(row=8, column=1, sticky="w")
+        tk.Label(app, text="Clip Duration (s):").grid(row=4, column=0, sticky="e")
+        tk.Entry(app, textvariable=clip_duration_var, width=10).grid(row=4, column=1, sticky="w")
 
-tk.Label(app, textvariable=video_attributes_var, fg="blue", justify="left").grid(row=10, column=0, columnspan=3)
+        tk.Label(app, text="Number of Clips:").grid(row=5, column=0, sticky="e")
+        tk.Entry(app, textvariable=num_clips_var, width=10).grid(row=5, column=1, sticky="w")
 
-tk.Button(app, text="Create Preview", command=run_preview).grid(row=9, column=1, pady=10)
+        tk.Label(app, text="Resolution:").grid(row=6, column=0, sticky="e")
+        tk.Entry(app, textvariable=resolution_var, width=10).grid(row=6, column=1, sticky="w")
 
-app.mainloop()
+        tk.Checkbutton(app, text="Include Audio", variable=include_audio_var).grid(row=7, column=1, sticky="w")
+        tk.Checkbutton(app, text="Random Selection", variable=random_selection_var).grid(row=8, column=1, sticky="w")
+
+        tk.Label(app, textvariable=video_attributes_var, fg="blue", justify="left").grid(row=10, column=0, columnspan=3)
+
+        tk.Button(app, text="Create Preview", command=run_preview).grid(row=9, column=1, pady=10)
+
+        app.mainloop()
+
+
+if __name__ == "__main__":
+    main()
