@@ -1,10 +1,17 @@
 import os
 import random
+from concurrent.futures import ThreadPoolExecutor
 
 import cv2
 from moviepy import VideoFileClip, concatenate_videoclips
 from moviepy.video.fx.FadeIn import FadeIn
 from moviepy.video.fx.FadeOut import FadeOut
+from tqdm import tqdm
+
+
+def save_frame(frame, output_dir, index):
+    frame_file = os.path.join(output_dir, f"frame_{index:03d}.jpg")
+    cv2.imwrite(frame_file, frame)
 
 
 def extract_frames(video_path, output_dir, num_frames=10):
@@ -18,17 +25,25 @@ def extract_frames(video_path, output_dir, num_frames=10):
     frame_count = 0
     extracted_count = 0
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
+    with ThreadPoolExecutor() as executor:
+        futures = []
+        with tqdm(total=num_frames, desc="Extracting frames") as pbar:
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
 
-        if frame_count % interval == 0 and extracted_count < num_frames:
-            frame_file = os.path.join(output_dir, f"frame_{extracted_count + 1:03d}.jpg")
-            cv2.imwrite(frame_file, frame)
-            extracted_count += 1
+                if frame_count % interval == 0 and extracted_count < num_frames:
+                    future = executor.submit(save_frame, frame, output_dir, extracted_count + 1)
+                    futures.append(future)
+                    extracted_count += 1
+                    pbar.update(1)
 
-        frame_count += 1
+                frame_count += 1
+
+        # Ensure all frames are saved
+        for future in futures:
+            future.result()
 
     cap.release()
     print(f"Extracted {extracted_count} frames to {output_dir}")
