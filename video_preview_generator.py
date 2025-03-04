@@ -1,10 +1,12 @@
 import os
-import random
+
 import cv2
 from moviepy import VideoFileClip, concatenate_videoclips
 from moviepy.video.fx.FadeIn import FadeIn
 from moviepy.video.fx.FadeOut import FadeOut
-#Test
+
+
+# Test
 
 def extract_frames(video_path, output_dir, num_frames=10):
     if not os.path.exists(output_dir):
@@ -31,6 +33,7 @@ def extract_frames(video_path, output_dir, num_frames=10):
 
     cap.release()
     print(f"Extracted {extracted_count} frames to {output_dir}")
+
 
 def create_video_preview(video_path, output_path, clip_duration=2, num_clips=5, resolution=(1280, 720),
                          include_audio=True, random_selection=False):
@@ -71,6 +74,7 @@ def create_video_preview(video_path, output_path, clip_duration=2, num_clips=5, 
         ffmpeg_params=["-b:a", "192k"]
     )
     print(f"Preview video saved to {output_path}")
+
 
 if __name__ == "__main__":
     import argparse
