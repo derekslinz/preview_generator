@@ -1,4 +1,5 @@
 import os
+import random
 
 import cv2
 from moviepy import VideoFileClip, concatenate_videoclips
