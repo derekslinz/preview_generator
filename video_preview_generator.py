@@ -1,55 +1,13 @@
-import os
 import random
-from concurrent.futures import ThreadPoolExecutor
+import tkinter as tk
+from tkinter import filedialog, messagebox
 
-import cv2
 from moviepy import VideoFileClip, concatenate_videoclips
 from moviepy.video.fx.FadeIn import FadeIn
 from moviepy.video.fx.FadeOut import FadeOut
-from tqdm import tqdm
 
 
-def save_frame(frame, output_dir, index):
-    frame_file = os.path.join(output_dir, f"frame_{index:03d}.jpg")
-    cv2.imwrite(frame_file, frame)
-
-
-def extract_frames(video_path, output_dir, num_frames=10):
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
-    cap = cv2.VideoCapture(video_path)
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    interval = max(total_frames // num_frames, 1)
-
-    frame_count = 0
-    extracted_count = 0
-
-    with ThreadPoolExecutor() as executor:
-        futures = []
-        with tqdm(total=num_frames, desc="Extracting frames") as pbar:
-            while cap.isOpened():
-                ret, frame = cap.read()
-                if not ret:
-                    break
-
-                if frame_count % interval == 0 and extracted_count < num_frames:
-                    future = executor.submit(save_frame, frame, output_dir, extracted_count + 1)
-                    futures.append(future)
-                    extracted_count += 1
-                    pbar.update(1)
-
-                frame_count += 1
-
-        # Ensure all frames are saved
-        for future in futures:
-            future.result()
-
-    cap.release()
-    print(f"Extracted {extracted_count} frames to {output_dir}")
-
-
-def create_video_preview(video_path, output_path, clip_duration=2, num_clips=5, resolution=(1280, 720),
+def create_video_preview(video_path, output_file_name, clip_duration=2, num_clips=5, resolution=(1280, 720),
                          include_audio=True, random_selection=False):
     clip = VideoFileClip(video_path).resized(resolution)
     duration = clip.duration
@@ -79,7 +37,7 @@ def create_video_preview(video_path, output_path, clip_duration=2, num_clips=5, 
 
     preview = concatenate_videoclips(preview_clips, method="compose")
     preview.write_videofile(
-        output_path,
+        output_file_name,
         codec="libx264",
         audio=include_audio,
         audio_codec='aac',
@@ -87,42 +45,64 @@ def create_video_preview(video_path, output_path, clip_duration=2, num_clips=5, 
         remove_temp=True,
         ffmpeg_params=["-b:a", "192k"]
     )
-    print(f"Preview video saved to {output_path}")
+    print(f"Preview video saved to {output_file_name}")
 
 
-if __name__ == "__main__":
-    import argparse
+def select_video_file():
+    file_path = filedialog.askopenfilename(filetypes=[("Video files", "*.mp4 *.avi *.mov *.m4v *.mkv")])
+    if file_path:
+        video_path_var.set(file_path)
 
-    parser = argparse.ArgumentParser(description="Generate a video preview.")
-    parser.add_argument("video_path", help="Path to the input video file.")
-    parser.add_argument("-t", "--output_type", choices=["frames", "preview"], default="preview",
-                        help="Type of preview to generate.")
-    parser.add_argument("-d", "--output_dir", default="frames", help="Directory to save extracted frames.")
-    parser.add_argument("-o", "--output_path", help="Path to save the preview video.")
-    parser.add_argument("-f", "--num_frames", type=int, default=10,
-                        help="Number of frames to extract (for 'frames').")
-    parser.add_argument("-c", "--clip_duration", type=int, default=2,
-                        help="Duration of each clip (in seconds, for 'preview').")
-    parser.add_argument("-n", "--num_clips", type=int, default=5,
-                        help="Number of clips to include (for 'preview').")
-    parser.add_argument("-r", "--resolution", type=str, default="1280x720",
-                        help="Resolution of the preview video (format: WIDTHxHEIGHT).")
-    parser.add_argument("-a", "--include_audio", action="store_true", default=True,
-                        help="Include audio in the preview video.")
-    parser.add_argument("--random_selection", action="store_true", default=False,
-                        help="Select subclips randomly instead of evenly spaced.")
 
-    args = parser.parse_args()
+def run_preview():
+    video_path = video_path_var.get()
+    output_file_name = output_file_name_var.get()
+    clip_duration = int(clip_duration_var.get())
+    num_clips = int(num_clips_var.get())
+    resolution = tuple(map(int, resolution_var.get().split('x')))
+    include_audio = include_audio_var.get()
+    random_selection = random_selection_var.get()
 
-    width, height = map(int, args.resolution.split('x'))
-    resolution = (width, height)
+    if not video_path or not output_file_name:
+        messagebox.showerror("Error", "Please specify both video file and output path.")
+        return
 
-    if args.output_path is None:
-        base, ext = os.path.splitext(args.video_path)
-        args.output_path = f"{base}_preview.mp4"
+    create_video_preview(video_path, output_file_name, clip_duration, num_clips, resolution, include_audio,
+                         random_selection)
 
-    if args.output_type == "frames":
-        extract_frames(args.video_path, args.output_dir, args.num_frames)
-    elif args.output_type == "preview":
-        create_video_preview(args.video_path, args.output_path, args.clip_duration, args.num_clips, resolution,
-                             args.include_audio, args.random_selection)
+
+app = tk.Tk()
+app.title("Video Processing Tool")
+
+video_path_var = tk.StringVar()
+output_dir_var = tk.StringVar()
+output_file_name_var = tk.StringVar()
+num_frames_var = tk.StringVar(value="10")
+clip_duration_var = tk.StringVar(value="2")
+num_clips_var = tk.StringVar(value="5")
+resolution_var = tk.StringVar(value="1280x720")
+include_audio_var = tk.BooleanVar(value=True)
+random_selection_var = tk.BooleanVar(value=True)
+
+tk.Label(app, text="Video File:").grid(row=0, column=0, sticky="e")
+tk.Entry(app, textvariable=video_path_var, width=50).grid(row=0, column=1)
+tk.Button(app, text="Browse", command=select_video_file).grid(row=0, column=2)
+
+tk.Label(app, text="Output File Name:").grid(row=2, column=0, sticky="e")
+tk.Entry(app, textvariable=output_file_name_var, width=50).grid(row=2, column=1)
+
+tk.Label(app, text="Clip Duration (s):").grid(row=4, column=0, sticky="e")
+tk.Entry(app, textvariable=clip_duration_var, width=10).grid(row=4, column=1, sticky="w")
+
+tk.Label(app, text="Number of Clips:").grid(row=5, column=0, sticky="e")
+tk.Entry(app, textvariable=num_clips_var, width=10).grid(row=5, column=1, sticky="w")
+
+tk.Label(app, text="Resolution:").grid(row=6, column=0, sticky="e")
+tk.Entry(app, textvariable=resolution_var, width=10).grid(row=6, column=1, sticky="w")
+
+tk.Checkbutton(app, text="Include Audio", variable=include_audio_var).grid(row=7, column=1, sticky="w")
+tk.Checkbutton(app, text="Random Selection", variable=random_selection_var).grid(row=8, column=1, sticky="w")
+
+tk.Button(app, text="Create Preview", command=run_preview).grid(row=9, column=1, pady=10)
+
+app.mainloop()
